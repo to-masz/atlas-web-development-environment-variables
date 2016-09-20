@@ -1,11 +1,18 @@
-#!/usr/bin/env bash
+#!/bin/sh
+#
+# Installation script to install the Athena based atlas toolkit plugin.
+#
+# It will download the required athena version and install it to /opt/atlas-toolkit
+# and will also create a wrapper script to access it easily.
+#
+# Author: Simon Effenberg <simon.effenberg@olx.com>
 
 PREFIX=/opt
 
 ATHENA_PLUGIN_GIT=git@github.com:athena-oss/athena.git
 ATLAS_PLUGIN_GIT=git@github.com:naspersclassifieds-shared/athena-plugin-atlas.git
 
-function check_for_toolset()
+check_for_toolset()
 {
   for command in ssh git; do
     if ! which "$command" >/dev/null 2>&1; then
@@ -18,7 +25,7 @@ function check_for_toolset()
   fi
 }
 
-function get()
+get()
 {
   if which curl >/dev/null 2>&1; then
     curl -Lqs "$@"
@@ -27,41 +34,41 @@ function get()
   fi
 }
 
-function version()
+version()
 {
   # http://stackoverflow.com/questions/4023830/how-compare-two-strings-in-dot-separated-version-format-in-bash$
   echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
 }
 
-function print_out()
+print_out()
 {
   local prefix=$1 ; shift
   local line
 
   for line in "$@"; do
-    printf "%-5s: %s\n" "$prefix" "$line"
+    >&2 printf "%-5s: %s\n" "$prefix" "$line"
   done
 }
 
-function info()
+info()
 {
   print_out "INFO" "$@"
 }
 
-function error()
+error()
 {
   print_out "ERROR" "$@"
   exit 1
 }
 
-function uninstall()
+uninstall()
 {
   info "Removing atlas toolkit..."
   sudo rm -rf "$PREFIX/atlas-toolkit"
   sudo rm -f /usr/local/bin/atlas
 }
 
-function install_bin_script()
+install_bin_script()
 {
   info "Creating wrapper script in /usr/local/bin/atlas"
   sudo tee /usr/local/bin/atlas <<EOF >/dev/null
@@ -72,65 +79,67 @@ EOF
   sudo chmod a+x /usr/local/bin/atlas
 }
 
-function get_version()
+get_version()
 {
-  local tmp_file=$(mktemp atlas_version.XXXXX)
+  local tmp_file=$(mktemp /tmp/atlas_version.XXXXX)
   get "https://github.com/naspersclassifieds-shared/atlas-web-development-environment-variables/raw/master/variables.sh" >"$tmp_file" \
     || error "the latest version couldn't be determined"
 
-  source "$tmp_file"; rm "$tmp_file"
+  . "$tmp_file"; rm "$tmp_file"
 
   echo "$ATLAS_PLUGIN_VERSION"
 }
 
-function get_installed_version()
+get_installed_version()
 {
   if [ -f "$PREFIX/atlas-toolkit/plugins/atlas/version.txt" ]; then
     cat "$PREFIX/atlas-toolkit/plugins/atlas/version.txt"
   fi
 }
 
-function has_github_access()
+has_github_access()
 {
   ssh -T git@github.com 2>&1 | grep -q 'successfully authenticated'
 }
 
-function get_atlas_plugin()
+get_atlas_plugin()
 {
   local version=$1
-  local tmp_dir=$(mktemp -d atlas.XXXXX)
+  local tmp_dir=$(mktemp -d /tmp/atlas.XXXXX)
 
-  git clone --depth=1 --branch v$version  "$ATLAS_PLUGIN_GIT" "$tmp_dir"
+  info "Downloading the atlas plugin.."
+  git clone -q --depth=1 --single-branch --branch v$version  "$ATLAS_PLUGIN_GIT" "$tmp_dir" 2>/dev/null
 
   echo "$tmp_dir"
 }
 
-function get_athena()
+get_athena()
 {
   local version=$1
-  local tmp_dir=$(mktemp -d athena.XXXXX)
+  local tmp_dir=$(mktemp -d /tmp/athena.XXXXX)
 
-  git clone --depth=1 --branch v$version "$ATHENA_PLUGIN_GIT" "$tmp_dir"
+  info "Downloading Athena.."
+  git clone -q --depth=1 --single-branch --branch v$version "$ATHENA_PLUGIN_GIT" "$tmp_dir" 2>/dev/null
 
   echo "$tmp_dir"
 }
 
-function install_athena()
+install_athena()
 {
   sudo mv "$1" "$PREFIX/atlas-toolkit"
 }
 
-function install_atlas_plugin()
+install_atlas_plugin()
 {
   sudo mv "$1" "$PREFIX/atlas-toolkit/plugins/atlas"
 }
 
-function get_athena_version()
+get_athena_version()
 {
-   (source "$1/dependencies.ini"; echo $base)
+   (. "$1/dependencies.ini"; echo $base)
 }
 
-function install()
+install()
 {
   local plugin_file
   local answer
@@ -175,7 +184,7 @@ function install()
 
   info "Root permissions are required to install this toolkit.."
 
-  if [ "$need_uninstall" == true ]; then
+  if [ "$need_uninstall" = "true" ]; then
     uninstall
   fi
 
@@ -187,7 +196,7 @@ function install()
   info "Installation succeeded.. please use atlas by calling 'atlas' on the commandline"
 }
 
-function main()
+main()
 {
   local system=$(uname -s)
 
