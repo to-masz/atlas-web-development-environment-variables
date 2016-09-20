@@ -74,8 +74,13 @@ EOF
 
 function get_version()
 {
-  source <(get "https://github.com/naspersclassifieds-shared/atlas-web-development-environment-variables/raw/master/variables.sh") && \
-    echo "$ATLAS_PLUGIN_VERSION" || error "the latest version couldn't be determined"
+  local tmp_file=$(mktemp atlas_version.XXXXX)
+  get "https://github.com/naspersclassifieds-shared/atlas-web-development-environment-variables/raw/master/variables.sh" >"$tmp_file" \
+    || error "the latest version couldn't be determined"
+
+  source "$tmp_file"; rm "$tmp_file"
+
+  echo "$ATLAS_PLUGIN_VERSION"
 }
 
 function get_installed_version()
