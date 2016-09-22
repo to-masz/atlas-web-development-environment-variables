@@ -2,12 +2,12 @@
 #
 # Installation script to install the Athena based atlas toolkit plugin.
 #
-# It will download the required athena version and install it to /opt/atlas-toolkit
-# and will also create a wrapper script to access it easily.
+# It will download the required athena version and install it to $PREFIX/.atlas-toolkit
+# and will also create a wrapper script to access it easily if $PREFIX is $HOME (default).
 #
 # Author: Simon Effenberg <simon.effenberg@olx.com>
 
-PREFIX=/opt
+PREFIX=${PREFIX:-$HOME}
 
 ATHENA_PLUGIN_GIT=git@github.com:athena-oss/athena.git
 ATLAS_PLUGIN_GIT=git@github.com:naspersclassifieds-shared/athena-plugin-atlas.git
@@ -66,17 +66,27 @@ error()
 uninstall()
 {
   info "Removing atlas toolkit...\n"
-  sudo rm -rf "$PREFIX/atlas-toolkit"
+  rm -rf "$PREFIX/.atlas-toolkit"
+  if [ "$PREFIX" != "$HOME" ]; then
+    info "PREFIX ($PREFIX) is not like HOME ($HOME)" \
+         "so the atlas bin file will not be managed"
+    return
+  fi
   sudo rm -f /usr/local/bin/atlas
 }
 
 install_bin_script()
 {
+  if [ "$PREFIX" != "$HOME" ]; then
+    info "PREFIX ($PREFIX) is not like HOME ($HOME)" \
+         "so the atlas bin file will not be managed"
+    return
+  fi
   info "Creating wrapper script in /usr/local/bin/atlas\n"
   sudo tee /usr/local/bin/atlas <<EOF >/dev/null
 #!/usr/bin/env bash
 
-"$PREFIX/atlas-toolkit/athena" atlas "\$@"
+"$HOME/.atlas-toolkit/athena" atlas "\$@"
 EOF
   sudo chmod a+x /usr/local/bin/atlas
 }
@@ -94,8 +104,8 @@ get_version()
 
 get_installed_version()
 {
-  if [ -f "$PREFIX/atlas-toolkit/plugins/atlas/version.txt" ]; then
-    cat "$PREFIX/atlas-toolkit/plugins/atlas/version.txt"
+  if [ -f "$PREFIX/.atlas-toolkit/plugins/atlas/version.txt" ]; then
+    cat "$PREFIX/.atlas-toolkit/plugins/atlas/version.txt"
   fi
 }
 
@@ -128,12 +138,12 @@ get_athena()
 
 install_athena()
 {
-  sudo mv "$1" "$PREFIX/atlas-toolkit"
+  sudo mv "$1" "$PREFIX/.atlas-toolkit"
 }
 
 install_atlas_plugin()
 {
-  sudo mv "$1" "$PREFIX/atlas-toolkit/plugins/atlas"
+  sudo mv "$1" "$PREFIX/.atlas-toolkit/plugins/atlas"
 }
 
 get_athena_version()
