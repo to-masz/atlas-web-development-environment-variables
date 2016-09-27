@@ -163,7 +163,7 @@ install()
   INSTALLED_VERSION=$(get_installed_version)
 
   if [ -n "$INSTALLED_VERSION" ]; then
-    if [ $(version "$INSTALLED_VERSION") -lt $(version "$INSTALLABLE_VERSION") ]; then
+    if [ $(version "$INSTALLED_VERSION") -gt $(version "$INSTALLABLE_VERSION") ]; then
       info "You have already atlas tookit installed in a newer version ($INSTALLED_VERSION),\n" \
            "do you want to downgrade to version $INSTALLABLE_VERSION? (y/N) "
     elif [ $(version "$INSTALLED_VERSION") -eq $(version "$INSTALLABLE_VERSION") ]; then
